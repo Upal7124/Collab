@@ -1,0 +1,172 @@
+@reference "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* @import "tailwindcss/preflight"; */
+
+/* === 🌼 Global Base Styles === */
+body {
+  @apply bg-gray-50 text-gray-800 font-sans antialiased transition-colors duration-300;
+  font-family: 'Inter', sans-serif;
+}
+
+/* === 🧱 Layout Helpers === */
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+
+/* === ⚡ Navbar === */
+.navbar {
+  @apply flex justify-between items-center py-4 bg-white/90 backdrop-blur-md sticky top-0 z-20 border-b border-yellow-300 shadow-sm transition-all duration-300;
+}
+
+
+.navbar:hover {
+  @apply shadow-md;
+}
+
+.navbar-title {
+  @apply font-extrabold text-yellow-500 tracking-tight hover:text-yellow-600 transition-colors duration-300 flex items-center gap-2;
+}
+
+/* 🌟 Nav Links */
+.nav-links {
+  @apply flex space-x-8 text-gray-700 font-medium list-none;
+}
+
+.nav-links li {
+  @apply list-none;
+}
+
+.nav-links a {
+  @apply relative no-underline text-gray-700 hover:text-gray-900 transition-all duration-300 ease-in-out cursor-pointer;
+}
+
+
+/* 💫 Animated underline */
+.nav-links a::after {
+  content: '';
+  @apply absolute left-0 bottom-[-4px] w-0 h-[2px] bg-yellow-500 rounded-full transition-all duration-300 ease-in-out;
+}
+
+.nav-links a:hover::after {
+  @apply w-full;
+}
+
+/* Active link */
+.active-link {
+  @apply text-yellow-600 font-semibold;
+}
+
+.active-link::after {
+  content: '';
+  @apply absolute left-0 bottom-[-4px] w-full h-[2px] bg-yellow-500 rounded-full;
+}
+
+
+/* === 🚀 Button Styles === */
+.btn-primary {
+  @apply bg-yellow-500 text-white font-semibold px-5 py-2 rounded-full shadow-md hover:bg-yellow-600 hover:shadow-lg transition-all duration-300 border-none cursor-pointer;
+}
+
+.btn-outline {
+  @apply border border-yellow-500 text-yellow-600 font-medium px-5 py-2 rounded-full hover:bg-yellow-500 hover:text-white transition-all duration-300 cursor-pointer;
+}
+
+/* === 🏷️ Headings === */
+h1, h2, h3, h4 {
+  @apply font-bold text-gray-900;
+}
+
+h1 {
+  @apply text-4xl sm:text-5xl mb-4 leading-tight;
+}
+
+h2 {
+  @apply text-2xl sm:text-3xl mb-3;
+}
+
+h3 {
+  @apply text-xl sm:text-2xl mb-2;
+}
+
+/* === 🧭 Hero / Section Utilities === */
+.section {
+  @apply py-16 sm:py-20 px-6 sm:px-8 bg-white shadow-sm rounded-2xl mb-10;
+}
+
+.section-alt {
+  @apply py-16 sm:py-20 px-6 sm:px-8 bg-yellow-50 rounded-2xl mb-10;
+}
+
+.section-title {
+  @apply text-3xl font-extrabold text-gray-900 mb-6 text-center;
+}
+
+.section-subtitle {
+  @apply text-gray-600 text-center max-w-2xl mx-auto mb-10;
+}
+
+/* === 💡 Cards / Skill Items === */
+.card {
+  @apply bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100;
+}
+
+.card:hover {
+  @apply border-yellow-400;
+}
+
+/* === ✨ Selection & Scrollbar === */
+::selection {
+  background-color: #facc15; /* yellow-400 */
+  color: #111;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #facc15;
+  border-radius: 9999px;
+  border: 2px solid transparent; /* prevents overflow */
+  background-clip: content-box;  /* ensures it stays inside */
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #facc15; /* yellow-400 */
+}
+
+/* === 🌙 Page Animation === */
+.page-fade {
+  @apply transition-opacity duration-700 ease-in-out;
+}
+
+.page-fade-enter {
+  @apply opacity-0;
+}
+
+.page-fade-enter-active {
+  @apply opacity-100;
+}
+
+/* === 🔥 Footer === */
+.footer {
+  @apply bg-gray-900 text-gray-300 py-8 mt-16 text-center;
+}
+
+.footer a {
+  @apply text-yellow-400 hover:text-yellow-300 transition;
+}
+
+@layer base {
+  body {
+    @apply overflow-x-hidden;
+  }
+}
