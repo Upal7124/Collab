@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import Navbar from "./Components/Navbar.jsx";
 import Hero from "./Components/Hero.jsx";
 import SkillsSection from "./Components/SkillsSelection.jsx";
@@ -13,13 +14,14 @@ import ProjectsPage from "./Components/pages/ProjectsPage.jsx";
 import MatchChecker from "./Components/pages/MatchChecker.jsx";
 import ScheduleMeeting from "./Components/pages/ScheduleMeeting.jsx";
 import Skillsetup from "./Components/pages/Skillsetup.jsx";
+import FloatingMatchButton from "./Components/FloatingMatchButton.jsx";
 
 
 function App() {
   const [page, setPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ Persist login on refresh
+  // ✅ Restore login session on refresh
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
@@ -27,18 +29,20 @@ function App() {
     }
   }, []);
 
-  // ✅ Login handler
-  function handleLogin() {
+  /* ---------------- AUTH HANDLERS ---------------- */
+
+  const handleLogin = () => {
     setIsLoggedIn(true);
     setPage("home");
-  }
+  };
 
-  // ✅ Logout handler
-  function handleLogout() {
+  const handleLogout = () => {
     localStorage.removeItem("user");
     setIsLoggedIn(false);
     setPage("home");
-  }
+  };
+
+  /* ---------------- RENDER ---------------- */
 
   return (
     <>
@@ -57,15 +61,6 @@ function App() {
         </>
       )}
 
-      {/* OTHER PAGES */}
-      {page === "skills" && <SkillDiscovery />}
-      {page === "projects" && <ProjectsPage />}
-      {page === "about" && <About />}
-      {page === "contact" && <Contact />}
-      {page === "profile" && <Profile />}
-      {page === "match" && <MatchChecker onPageChange={setPage} />}
-      {page === "schedule" && <ScheduleMeeting />}
-
       {/* AUTH */}
       {page === "login" && (
         <Login onLogin={handleLogin} onPageChange={setPage} />
@@ -76,8 +71,23 @@ function App() {
       )}
 
       {page === "Skillsetup" && (
-          <Skillsetup onDone={() => setPage("home")} />
+        <Skillsetup onDone={() => setPage("home")} />
       )}
+
+      {/* USER PAGES */}
+      {page === "profile" && <Profile />}
+      {page === "skills" && <SkillDiscovery />}
+      {page === "projects" && <ProjectsPage />}
+      {page === "about" && <About />}
+      {page === "contact" && <Contact />}
+
+      {/* MATCH FLOW */}
+      {page === "match" && <MatchChecker onPageChange={setPage} />}
+      {page === "schedule" && <ScheduleMeeting />}
+     {isLoggedIn && page !== "match" && (
+  <FloatingMatchButton onClick={() => setPage("match")} />
+)}
+
 
 
       <Footer />

@@ -4,17 +4,20 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
 const multer = require("multer");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const fetch = require("node-fetch");
 
 dotenv.config();
 
+/* =========================
+   APP SETUP
+========================= */
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* =========================
-   DATABASE CONNECTION
+   DB CONNECTION
 ========================= */
 const db = mysql.createConnection({
   host: "localhost",
@@ -25,264 +28,214 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.log("❌ Database connection failed:", err);
+    console.error("❌ MySQL failed:", err);
     return;
   }
   console.log("✅ MySQL Connected");
 });
 
 /* =========================
-   MULTER SETUP (PROFILE PIC)
+   MULTER
 ========================= */
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
+  destination: "uploads/",
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
 });
-
 const upload = multer({ storage });
-
-/* =========================
-   GEMINI SETUP
-========================= */
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-/* =========================
-   ROUTES
-========================= */
-
-// Serve uploaded images
 app.use("/uploads", express.static("uploads"));
 
-/* ---------- USERS ---------- */
+/* =========================
+   GEMINI REST HELPER (FIX)
+========================= */
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ GEMINI_API_KEY missing in .env");
+  process.exit(1);
+}
 
-// Get all users
+async function callGemini(prompt) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!data.candidates) {
+    throw new Error("Gemini returned no candidates");
+  }
+
+  return data.candidates[0].content.parts[0].text;
+}
+
+/* =========================
+   USER ROUTES
+========================= */
 app.get("/users", (req, res) => {
   db.query(
-    "SELECT id, fullName, email, skills_to_learn, skills_to_teach FROM users",
-    (err, result) => {
-      if (err) return res.status(500).send(err);
-      res.send(result);
+    "SELECT id, fullName, skills_to_learn, skills_to_teach FROM users",
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
     }
   );
 });
 
-// Get users except logged-in user
-// Get logged-in user profile
-app.get("/user/:id", (req, res) => {
-  const userId = req.params.id;
-
-  const sql = `
-    SELECT id, fullName, email, skills_to_teach, skills_to_learn, profile_pic
-    FROM users
-    WHERE id = ?
-  `;
-
-  db.query(sql, [userId], (err, result) => {
-    if (err) return res.status(500).send(err);
-    if (result.length === 0)
-      return res.status(404).send({ message: "User not found" });
-
-    res.send(result[0]);
-  });
+app.get("/users/top/:id", (req, res) => {
+  db.query(
+    "SELECT id, fullName, skills_to_learn, skills_to_teach FROM users WHERE id != ? LIMIT 5",
+    [req.params.id],
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      res.json(rows);
+    }
+  );
 });
 
-// Register
+app.get("/user/:id", (req, res) => {
+  db.query(
+    "SELECT * FROM users WHERE id = ?",
+    [req.params.id],
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      if (!rows.length) return res.status(404).json({});
+      res.json(rows[0]);
+    }
+  );
+});
+
 app.post("/register", (req, res) => {
   const { fullName, email, password } = req.body;
-
-  const sql =
-    "INSERT INTO users (fullName, email, password) VALUES (?, ?, ?)";
-
-  db.query(sql, [fullName, email, password], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(400).send({
-        message: "Email already exists or DB error"
-      });
+  db.query(
+    "INSERT INTO users (fullName,email,password) VALUES (?,?,?)",
+    [fullName, email, password],
+    (err, result) => {
+      if (err) return res.status(400).json({ message: "User exists" });
+      res.json({ userId: result.insertId });
     }
-
-    res.send({
-      message: "✅ User registered successfully!",
-      userId: result.insertId
-    });
-  });
+  );
 });
 
-
-// Login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-
-  const sql = "SELECT * FROM users WHERE email = ? AND password = ?";
-
-  db.query(sql, [email, password], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send({ message: "DB error" });
+  db.query(
+    "SELECT * FROM users WHERE email=? AND password=?",
+    [email, password],
+    (err, rows) => {
+      if (err) return res.status(500).json(err);
+      if (!rows.length)
+        return res.status(401).json({ message: "Invalid credentials" });
+      res.json({ user: rows[0] });
     }
-
-    if (results.length === 0) {
-      return res.status(401).send({ message: "Invalid credentials" });
-    }
-
-    res.send({
-      message: "✅ Login successful",
-      user: results[0],
-    });
-  });
+  );
 });
 
+app.post("/update-skills/:id", upload.single("profilePic"), (req, res) => {
+  const { skills_to_learn, skills_to_teach } = req.body;
+  const pic = req.file ? req.file.filename : null;
 
-/* ---------- SKILL SETUP (🔥 IMPORTANT) ---------- */
-app.post(
-  "/update-skills/:id",
-  upload.single("profilePic"),
-  (req, res) => {
-    const userId = req.params.id;
-    const { skills_to_teach, skills_to_learn } = req.body;
-    const profilePic = req.file ? req.file.filename : null;
-
-    const sql = `
-      UPDATE users
-      SET skills_to_teach = ?, skills_to_learn = ?, profile_pic = ?
-      WHERE id = ?
-    `;
-
-    db.query(
-      sql,
-      [skills_to_teach, skills_to_learn, profilePic, userId],
-      (err) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).send("DB update failed");
-        }
-
-        res.send({ message: "✅ Skills updated successfully" });
-      }
-    );
-  }
-);
+  db.query(
+    "UPDATE users SET skills_to_learn=?, skills_to_teach=?, profile_pic=? WHERE id=?",
+    [skills_to_learn, skills_to_teach, pic, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Updated" });
+    }
+  );
+});
 
 /* =========================
-   🔥 GEMINI MATCHING APIs
+   🔥 AI MATCH (ONE → MANY)
 ========================= */
-
-// Match two users
-app.post("/ai-match", async (req, res) => {
-  try {
-    const { userAId, userBId } = req.body;
-
-    const getUser = (id) =>
-      new Promise((resolve, reject) => {
-        db.query(
-          "SELECT fullName, skills_to_learn, skills_to_teach FROM users WHERE id = ?",
-          [id],
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result[0]);
-          }
-        );
-      });
-
-    const userA = await getUser(userAId);
-    const userB = await getUser(userBId);
-
-    if (!userA || !userB)
-      return res.status(404).send({ message: "User not found" });
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-    const prompt = `
-You are an AI matching engine for a skill-exchange platform.
-
-User A:
-Name: ${userA.fullName}
-Wants to learn: ${userA.skills_to_learn}
-Can teach: ${userA.skills_to_teach}
-
-User B:
-Name: ${userB.fullName}
-Wants to learn: ${userB.skills_to_learn}
-Can teach: ${userB.skills_to_teach}
-
-Return ONLY valid JSON:
-{
-  "matchScore": number,
-  "reason": "short explanation"
-}
-`;
-
-    const result = await model.generateContent(prompt);
-    res.json(JSON.parse(result.response.text()));
-  } catch (error) {
-    console.error("AI Match Error:", error);
-    res.status(500).send({ message: "AI matching failed" });
-  }
-});
-
-// Match one user with many
 app.post("/ai-match-many", async (req, res) => {
-  try {
-    const { userId } = req.body;
+  const { userId } = req.body;
+
+  db.query("SELECT * FROM users WHERE id = ?", [userId], async (err, meRows) => {
+    if (err || !meRows.length) return res.json([]);
+
+    const me = meRows[0];
 
     db.query(
-      "SELECT * FROM users WHERE id = ?",
+      "SELECT * FROM users WHERE id != ?",
       [userId],
-      async (err, meResult) => {
-        if (err || meResult.length === 0)
-          return res.status(404).send("User not found");
+      async (err, users) => {
+        if (err || !users.length) return res.json([]);
 
-        const me = meResult[0];
+        const prompt = `
+Return ONLY valid JSON array.
 
-        db.query(
-          "SELECT * FROM users WHERE id != ?",
-          [userId],
-          async (err, users) => {
-            if (err) return res.status(500).send(err);
+[
+ { "userId": number, "score": NUMBER (not string), "reason": "short reason" }
+]
 
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+Rules:
+- Score from 0 to 100
+- Higher score = better skill exchange
+- Be realistic
 
-            const prompt = `
-My profile:
-Name: ${me.fullName}
+MY PROFILE:
 Learn: ${me.skills_to_learn}
 Teach: ${me.skills_to_teach}
 
-Other users:
+OTHER USERS:
 ${users
   .map(
     (u) => `
-User ID: ${u.id}
-Name: ${u.fullName}
+UserId: ${u.id}
 Learn: ${u.skills_to_learn}
 Teach: ${u.skills_to_teach}
 `
   )
   .join("\n")}
-
-Return ONLY JSON array:
-[
-  { "userId": number, "score": number, "reason": "short" }
-]
 `;
 
-            const result = await model.generateContent(prompt);
-            res.json(JSON.parse(result.response.text()));
-          }
-        );
+        try {
+          let text = await callGemini(prompt);
+          text = text.replace(/```json|```/g, "").trim();
+
+          let parsed = JSON.parse(text);
+
+// 🔥 FORCE score to number
+parsed = parsed.map(m => ({
+  ...m,
+  score: Number(m.score)
+}));
+
+// ✅ FILTER AFTER CONVERSION
+const filteredMatches = parsed.filter(m => m.score >= 50);
+
+// sort highest first
+filteredMatches.sort((a, b) => b.score - a.score);
+
+res.json(filteredMatches);
+
+
+          // OPTIONAL: sort highest first
+          filteredMatches.sort((a, b) => b.score - a.score);
+
+          res.json(filteredMatches);
+        } catch (e) {
+          // Silent fallback
+          res.json([]);
+        }
       }
     );
-  } catch (err) {
-    res.status(500).send(err);
-  }
+  });
 });
 
+
 /* =========================
-   SERVER START
+   START SERVER
 ========================= */
 app.listen(5000, () => {
   console.log("✅ Server running on port 5000");

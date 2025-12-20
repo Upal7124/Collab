@@ -1,120 +1,86 @@
-import React, { useState } from "react";
-import { Calendar, Clock, Video, MapPin, ArrowLeft } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
-export default function ScheduleMeeting({ onPageChange }) {
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [mode, setMode] = useState("Google Meet");
-  const [message, setMessage] = useState("");
+function SkillsSection({ onPageChange }) {
+  const loggedUser = JSON.parse(localStorage.getItem("user"));
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  if (!loggedUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600 text-lg">
+        Please log in to view collaborators.
+      </div>
+    );
+  }
 
-    if (!date || !time) {
-      alert("Please select a date and time.");
-      return;
-    }
+  const [people, setPeople] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    alert(`Meeting Scheduled Successfully!
+  useEffect(() => {
+    fetch(`http://localhost:5000/users/${loggedUser.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        // ✅ Show only top 5 users
+        setPeople(data.slice(0, 5));
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load users", err);
+        setLoading(false);
+      });
+  }, [loggedUser.id]);
 
-📅 Date: ${date}
-⏰ Time: ${time}
-🟡 Mode: ${mode}
-💬 Message: ${message || "(No message)"}
-`);
-
-    onPageChange("profile"); // redirect to profile or home after booking
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg font-semibold text-yellow-700">
+        Loading collaborators...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9E6] flex items-center justify-center p-6">
-      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-10 border border-yellow-300 animate-fadeIn">
+    <section className="py-20 bg-gray-50">
+      <h3 className="text-4xl font-extrabold text-gray-900 text-center mb-14">
+        Top <span className="text-yellow-600">Collaborators</span>
+      </h3>
 
-
-        {/* Header */}
-        <h2 className="text-4xl font-bold text-center text-yellow-700 mb-2">
-          Schedule Your Collaboration Meeting
-        </h2>
-        <p className="text-center text-gray-600 mb-10">
-          Set a suitable time and meeting mode to connect with your partner.
-        </p>
-
-        {/* FORM */}
-        <form className="space-y-8" onSubmit={handleSubmit}>
-
-          {/* Date Picker */}
-          <div>
-            <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
-              <Calendar size={20} className="text-yellow-700" />
-              Select Meeting Date
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-3 border border-yellow-300 rounded-xl bg-gray-50 focus:ring-yellow-400 focus:border-yellow-500 outline-none"
-              required
-            />
-          </div>
-
-          {/* Time Picker */}
-          <div>
-            <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
-              <Clock size={20} className="text-yellow-700" />
-              Select Meeting Time
-            </label>
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="w-full px-4 py-3 border border-yellow-300 rounded-xl bg-gray-50 focus:ring-yellow-400 focus:border-yellow-500 outline-none"
-              required
-            />
-          </div>
-
-          {/* Meeting Mode */}
-          <div>
-            <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
-              <Video size={20} className="text-yellow-700" />
-              Meeting Mode
-            </label>
-
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="w-full px-4 py-3 border border-yellow-300 rounded-xl bg-gray-50 focus:ring-yellow-400 focus:border-yellow-500 outline-none"
-            >
-              <option>Google Meet</option>
-              <option>Zoom</option>
-              <option>Others</option>
-            </select>
-          </div>
-
-          {/* Message */}
-          <div>
-            <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
-              <MapPin size={20} className="text-yellow-700" />
-              Additional Message (Optional)
-            </label>
-
-            <textarea
-              rows="4"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Share meeting agenda, notes, or location details..."
-              className="w-full px-4 py-3 border border-yellow-300 rounded-xl bg-gray-50 focus:ring-yellow-400 focus:border-yellow-500 outline-none"
-            />
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-4 rounded-xl font-semibold shadow-lg transition border-none"
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 max-w-7xl mx-auto px-6">
+        {people.map((person) => (
+          <div
+            key={person.id}
+            onClick={() => onPageChange("match", person)}
+            className="cursor-pointer p-8 bg-white shadow-lg rounded-3xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
-            Send Request
-          </button>
-        </form>
+            <img
+              src={`https://i.pravatar.cc/150?u=${person.id}`}
+              alt={person.fullName}
+              className="w-28 h-28 rounded-full mx-auto mb-4 object-cover ring-4 ring-yellow-300"
+            />
+
+            <h4 className="text-xl font-semibold text-gray-900 text-center">
+              {person.fullName}
+            </h4>
+
+            <p className="text-yellow-600 font-medium mt-1 text-center">
+              Teaches: {person.skills_to_teach || "—"}
+            </p>
+
+            <p className="text-gray-600 text-sm mt-3 text-center">
+              Wants to learn: {person.skills_to_learn || "—"}
+            </p>
+          </div>
+        ))}
       </div>
-    </div>
+
+      {/* Optional CTA */}
+      <div className="text-center mt-12">
+        <button
+          onClick={() => onPageChange("skills")}
+          className="px-6 py-3 rounded-full bg-yellow-500 text-white font-semibold hover:bg-yellow-600 transition"
+        >
+          View All Collaborators
+        </button>
+      </div>
+    </section>
   );
 }
+
+export default SkillsSection;
