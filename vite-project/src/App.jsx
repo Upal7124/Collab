@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "./Components/Navbar.jsx";
 import Hero from "./Components/Hero.jsx";
 import SkillsSection from "./Components/SkillsSelection.jsx";
-import Login from "./Components/pages/login.jsx";
+import Login from "./Components/pages/Login.jsx";
 import Register from "./Components/pages/Register.jsx";
 import Profile from "./Components/pages/Profile.jsx";
 import SkillDiscovery from "./Components/pages/SkillDiscovery.jsx";
