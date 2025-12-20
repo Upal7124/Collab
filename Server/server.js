@@ -1,6 +1,14 @@
+require("dotenv").config();
+
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+
+app.use(cors({
+  origin: "https://collab-theta-steel.vercel.app",
+  credentials: true
+}));
+
 const dotenv = require("dotenv");
 const path = require("path");
 const multer = require("multer");
@@ -233,10 +241,12 @@ res.json(filteredMatches);
   });
 });
 
-
 /* =========================
    START SERVER
 ========================= */
-app.listen(5000, () => {
-  console.log("✅ Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
+
