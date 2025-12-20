@@ -12,24 +12,30 @@ import Contact from "./Components/pages/Contact.jsx";
 import ProjectsPage from "./Components/pages/ProjectsPage.jsx";
 import MatchChecker from "./Components/pages/MatchChecker.jsx";
 import ScheduleMeeting from "./Components/pages/ScheduleMeeting.jsx";
+import Skillsetup from "./Components/pages/Skillsetup.jsx";
+
 
 function App() {
   const [page, setPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Load session when page refreshes
+  // ✅ Persist login on refresh
   useEffect(() => {
-    const session = localStorage.getItem("session");
-    if (session) setIsLoggedIn(true);
+    const user = localStorage.getItem("user");
+    if (user) {
+      setIsLoggedIn(true);
+    }
   }, []);
 
+  // ✅ Login handler
   function handleLogin() {
     setIsLoggedIn(true);
     setPage("home");
   }
 
+  // ✅ Logout handler
   function handleLogout() {
-    localStorage.removeItem("session");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
     setPage("home");
   }
@@ -43,6 +49,7 @@ function App() {
         currentPage={page}
       />
 
+      {/* HOME */}
       {page === "home" && (
         <>
           <Hero />
@@ -50,20 +57,28 @@ function App() {
         </>
       )}
 
+      {/* OTHER PAGES */}
       {page === "skills" && <SkillDiscovery />}
       {page === "projects" && <ProjectsPage />}
       {page === "about" && <About />}
       {page === "contact" && <Contact />}
       {page === "profile" && <Profile />}
       {page === "match" && <MatchChecker onPageChange={setPage} />}
-
       {page === "schedule" && <ScheduleMeeting />}
 
+      {/* AUTH */}
       {page === "login" && (
         <Login onLogin={handleLogin} onPageChange={setPage} />
       )}
 
-      {page === "Reg" && <Register onRegister={() => setPage("login")} />}
+      {page === "Reg" && (
+        <Register onRegister={() => setPage("Skillsetup")} />
+      )}
+
+      {page === "Skillsetup" && (
+          <Skillsetup onDone={() => setPage("home")} />
+      )}
+
 
       <Footer />
     </>

@@ -10,7 +10,7 @@ export default function Register({ onRegister }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (password !== confirm) {
@@ -18,21 +18,29 @@ export default function Register({ onRegister }) {
       return;
     }
 
-    axios
-  .post("http://localhost:5000/register", {
-    fullName: name,
-    email,
-    password,
-  })
-  .then((res) => {
-    alert(res.data.message);
-    onRegister();
-  })
-  .catch((err) => {
-    console.log(err);
-    alert("Registration failed");
-  });
+    try {
+      const res = await axios.post("http://localhost:5000/register", {
+        fullName: name,
+        email,
+        password,
+      });
 
+      // ✅ AUTO LOGIN AFTER REGISTER
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          id: res.data.userId,
+          fullName: name,
+          email: email,
+        })
+      );
+
+      alert("Registration successful!");
+      onRegister(); // go to SkillSetup
+    } catch (err) {
+      console.error(err);
+      alert("Registration failed");
+    }
   };
 
   return (
@@ -48,7 +56,6 @@ export default function Register({ onRegister }) {
 
         <form className="space-y-5" onSubmit={handleSubmit}>
 
-          {/* Full Name */}
           <div>
             <label className="font-semibold text-gray-700">Full Name</label>
             <input
@@ -56,11 +63,10 @@ export default function Register({ onRegister }) {
               required
               placeholder="Enter your full name"
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border border-gray-300"
+              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border"
             />
           </div>
 
-          {/* Email */}
           <div>
             <label className="font-semibold text-gray-700">Email</label>
             <input
@@ -68,11 +74,10 @@ export default function Register({ onRegister }) {
               required
               placeholder="Enter your email"
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border border-gray-300"
+              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border"
             />
           </div>
 
-          {/* Password */}
           <div className="relative">
             <label className="font-semibold text-gray-700">Password</label>
             <input
@@ -80,7 +85,7 @@ export default function Register({ onRegister }) {
               required
               placeholder="Create a password"
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border border-gray-300"
+              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border"
             />
             <span
               className="absolute right-4 top-11 cursor-pointer"
@@ -90,7 +95,6 @@ export default function Register({ onRegister }) {
             </span>
           </div>
 
-          {/* Confirm Password */}
           <div className="relative">
             <label className="font-semibold text-gray-700">Confirm Password</label>
             <input
@@ -98,7 +102,7 @@ export default function Register({ onRegister }) {
               required
               placeholder="Re-enter your password"
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border border-gray-300"
+              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border"
             />
             <span
               className="absolute right-4 top-11 cursor-pointer"
@@ -110,7 +114,7 @@ export default function Register({ onRegister }) {
 
           <button
             type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-full transition"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-full"
           >
             Register
           </button>

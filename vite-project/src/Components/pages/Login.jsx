@@ -19,14 +19,17 @@ export default function Login({ onLogin, onPageChange }) {
         password: form.password,
       })
       .then((res) => {
-        const user = res.data.user;
+  if (!res.data.user) {
+    throw new Error("No user data");
+  }
 
-        // Save session
-        localStorage.setItem("session", JSON.stringify(user));
+  // Save logged-in user safely
+  localStorage.setItem("user", JSON.stringify(res.data.user));
 
-        alert("✅ Login successful!");
-        onLogin();
-      })
+  alert("✅ Login successful!");
+  onLogin();
+})
+
       .catch(() => {
         alert("❌ Invalid email or password");
       });

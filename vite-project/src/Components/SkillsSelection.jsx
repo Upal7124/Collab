@@ -1,32 +1,41 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 function SkillsSection({ onPageChange }) {
-  const people = [
-    {
-      name: "Aarav Sen",
-      skill: "Full Stack Developer",
-      desc: "Frontend React developer looking for collaboration.",
-      img: "https://i.pravatar.cc/150?img=1",
-    },
-    {
-      name: "Riya Malhotra",
-      skill: "Frontend Development",
-      desc: "Specializes in React, Tailwind & UI/UX. Available for modern web builds.",
-      img: "https://i.pravatar.cc/150?img=2",
-    },
-    {
-      name: "Kabir Das",
-      skill: "Backend Development",
-      desc: "Node.js & Express developer. Builds fast and scalable APIs.",
-      img: "https://i.pravatar.cc/150?img=3",
-    },
-    {
-      name: "Saanvi Verma",
-      skill: "Data Analysis",
-      desc: "Python, Pandas, and SQL expert. Helps with dashboards & insights.",
-      img: "https://i.pravatar.cc/150?img=4",
-    },
-  ];
+  const loggedUser = JSON.parse(localStorage.getItem("user"));
+
+if (!loggedUser) {
+  return (
+    <div className="min-h-screen flex items-center justify-center text-red-600 text-lg">
+      Please log in to view collaborators.
+    </div>
+  );
+}
+
+
+
+  const [people, setPeople] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/users/${loggedUser.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setPeople(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load users", err);
+        setLoading(false);
+      });
+  }, [loggedUser.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg font-semibold text-yellow-700">
+        Loading collaborators...
+      </div>
+    );
+  }
 
   return (
     <section className="py-20 bg-gray-50">
@@ -35,29 +44,29 @@ function SkillsSection({ onPageChange }) {
       </h3>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 max-w-7xl mx-auto px-6">
-        {people.map((person, index) => (
-          <div onClick={() => onPageChange("match")}
-            key={index}
-            className="p-8 bg-white shadow-lg rounded-3xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+        {people.map(person => (
+          <div
+            key={person.id}
+            onClick={() => onPageChange("match", person)}
+            className="cursor-pointer p-8 bg-white shadow-lg rounded-3xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
             <img
-              src={person.img}
-              alt={person.name}
+              src={`https://i.pravatar.cc/150?u=${person.id}`}
+              alt={person.fullName}
               className="w-28 h-28 rounded-full mx-auto mb-4 object-cover ring-4 ring-yellow-300"
             />
 
             <h4 className="text-xl font-semibold text-gray-900">
-              {person.name}
+              {person.fullName}
             </h4>
-            <p className="text-yellow-600 font-medium mt-1">{person.skill}</p>
-            <p className="text-gray-600 text-sm mt-3">{person.desc}</p>
 
-            {/* <button
-              className="mt-5 bg-yellow-500 text-white px-5 py-2.5 rounded-xl font-medium w-full hover:bg-yellow-600 transition"
-              onClick={() => onPageChange("match")}
-            >
-              Collaborate
-            </button> */}
+            <p className="text-yellow-600 font-medium mt-1">
+              {person.skills_to_teach}
+            </p>
+
+            <p className="text-gray-600 text-sm mt-3">
+              Wants to learn: {person.skills_to_learn}
+            </p>
           </div>
         ))}
       </div>
