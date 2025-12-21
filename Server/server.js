@@ -1,32 +1,49 @@
+/**********************************
+ * ENV SETUP
+ **********************************/
 require("dotenv").config();
 
+/**********************************
+ * IMPORTS
+ **********************************/
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const path = require("path");
+const multer = require("multer");
+const fetch = require("node-fetch"); // keep if Node < 18
+
+/**********************************
+ * APP INIT (MUST BE FIRST)
+ **********************************/
+const app = express();
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://collab-theta-steel.vercel.app"
+];
 
 app.use(cors({
-  origin: "https://collab-theta-steel.vercel.app",
+  origin: function (origin, callback) {
+    // allow requests with no origin (Postman, curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true
 }));
 
-const dotenv = require("dotenv");
-const path = require("path");
-const multer = require("multer");
-const fetch = require("node-fetch");
 
-dotenv.config();
-
-/* =========================
-   APP SETUP
-========================= */
-const app = express();
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* =========================
-   DB CONNECTION
-========================= */
+/**********************************
+ * DATABASE CONNECTION
+ **********************************/
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -34,7 +51,7 @@ const db = mysql.createConnection({
   database: "testdb",
 });
 
-db.connect((err) => {
+db.connect(err => {
   if (err) {
     console.error("❌ MySQL failed:", err);
     return;
@@ -42,20 +59,21 @@ db.connect((err) => {
   console.log("✅ MySQL Connected");
 });
 
-/* =========================
-   MULTER
-========================= */
+/**********************************
+ * MULTER CONFIG
+ **********************************/
 const storage = multer.diskStorage({
   destination: "uploads/",
   filename: (req, file, cb) =>
     cb(null, Date.now() + path.extname(file.originalname)),
 });
+
 const upload = multer({ storage });
 app.use("/uploads", express.static("uploads"));
 
-/* =========================
-   GEMINI REST HELPER (FIX)
-========================= */
+/**********************************
+ * GEMINI HELPER
+ **********************************/
 if (!process.env.GEMINI_API_KEY) {
   console.error("❌ GEMINI_API_KEY missing in .env");
   process.exit(1);
@@ -63,32 +81,28 @@ if (!process.env.GEMINI_API_KEY) {
 
 async function callGemini(prompt) {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
+        contents: [{ parts: [{ text: prompt }] }]
       }),
     }
   );
 
   const data = await response.json();
 
-  if (!data.candidates) {
+  if (!data.candidates || !data.candidates.length) {
     throw new Error("Gemini returned no candidates");
   }
 
   return data.candidates[0].content.parts[0].text;
 }
 
-/* =========================
-   USER ROUTES
-========================= */
+/**********************************
+ * USER ROUTES
+ **********************************/
 app.get("/users", (req, res) => {
   db.query(
     "SELECT id, fullName, skills_to_learn, skills_to_teach FROM users",
@@ -124,6 +138,7 @@ app.get("/user/:id", (req, res) => {
 
 app.post("/register", (req, res) => {
   const { fullName, email, password } = req.body;
+
   db.query(
     "INSERT INTO users (fullName,email,password) VALUES (?,?,?)",
     [fullName, email, password],
@@ -135,14 +150,20 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
+  console.log("LOGIN BODY:", req.body);
+
   const { email, password } = req.body;
+
   db.query(
     "SELECT * FROM users WHERE email=? AND password=?",
     [email, password],
     (err, rows) => {
+      console.log("DB ROWS:", rows);
+
       if (err) return res.status(500).json(err);
       if (!rows.length)
         return res.status(401).json({ message: "Invalid credentials" });
+
       res.json({ user: rows[0] });
     }
   );
@@ -155,16 +176,16 @@ app.post("/update-skills/:id", upload.single("profilePic"), (req, res) => {
   db.query(
     "UPDATE users SET skills_to_learn=?, skills_to_teach=?, profile_pic=? WHERE id=?",
     [skills_to_learn, skills_to_teach, pic, req.params.id],
-    (err) => {
+    err => {
       if (err) return res.status(500).json(err);
       res.json({ message: "Updated" });
     }
   );
 });
 
-/* =========================
-   🔥 AI MATCH (ONE → MANY)
-========================= */
+/**********************************
+ * 🔥 AI MATCH (ONE → MANY)
+ **********************************/
 app.post("/ai-match-many", async (req, res) => {
   const { userId } = req.body;
 
@@ -180,73 +201,127 @@ app.post("/ai-match-many", async (req, res) => {
         if (err || !users.length) return res.json([]);
 
         const prompt = `
-Return ONLY valid JSON array.
+You are an AI skill-matching system.
 
+Return a JSON ARRAY only.
+Do not explain anything.
+
+If users have ANY overlapping or complementary skills,
+you MUST return at least one match.
+
+Format:
 [
- { "userId": number, "score": NUMBER (not string), "reason": "short reason" }
+  { "userId": number, "score": number, "reason": string }
 ]
 
-Rules:
-- Score from 0 to 100
-- Higher score = better skill exchange
-- Be realistic
+Scoring rules:
+- 70–100: strong reciprocal match
+- 40–69: partial but useful match
+- 20–39: weak but possible match
 
 MY PROFILE:
 Learn: ${me.skills_to_learn}
 Teach: ${me.skills_to_teach}
 
 OTHER USERS:
-${users
-  .map(
-    (u) => `
+${users.map(u => `
 UserId: ${u.id}
 Learn: ${u.skills_to_learn}
 Teach: ${u.skills_to_teach}
-`
-  )
-  .join("\n")}
+`).join("\n")}
 `;
 
+
         try {
-          let text = await callGemini(prompt);
-          text = text.replace(/```json|```/g, "").trim();
+  let text = await callGemini(prompt);
 
-          let parsed = JSON.parse(text);
+  text = text.replace(/```json|```/g, "").trim();
 
-// 🔥 FORCE score to number
-parsed = parsed.map(m => ({
-  ...m,
-  score: Number(m.score)
-}));
+  let parsed = JSON.parse(text);
 
-// ✅ FILTER AFTER CONVERSION
-const filteredMatches = parsed.filter(m => m.score >= 50);
+  // If Gemini actually returns something valid
+  if (Array.isArray(parsed) && parsed.length > 0) {
+    parsed = parsed.map(m => ({
+      userId: m.userId,
+      score: Number(m.score) || 0,
+      reason: m.reason || "AI-based compatibility analysis",
+      isFallback: false
+    }));
 
-// sort highest first
-filteredMatches.sort((a, b) => b.score - a.score);
+    parsed.sort((a, b) => b.score - a.score);
+    return res.json(parsed);
+  }
 
-res.json(filteredMatches);
+  throw new Error("Empty Gemini response");
+
+} catch (err) {
+  console.error("❌ Gemini HARD FAILURE:", err.message);
+
+  // ✅ SMART FALLBACK (MOVED HERE)
+  const fallback = users.map(u => {
+    const myLearn = (me.skills_to_learn || "")
+      .toLowerCase()
+      .split(",")
+      .map(s => s.trim());
+
+    const myTeach = (me.skills_to_teach || "")
+      .toLowerCase()
+      .split(",")
+      .map(s => s.trim());
+
+    const uLearn = (u.skills_to_learn || "")
+      .toLowerCase()
+      .split(",")
+      .map(s => s.trim());
+
+    const uTeach = (u.skills_to_teach || "")
+      .toLowerCase()
+      .split(",")
+      .map(s => s.trim());
+
+    let score = 20;
+
+    myLearn.forEach(skill => {
+      if (uTeach.includes(skill)) score += 25;
+    });
+
+    myTeach.forEach(skill => {
+      if (uLearn.includes(skill)) score += 25;
+    });
+
+    score = Math.min(score, 90);
+
+    // ✅ THIS LOG WILL NOW APPEAR
+    console.log("Fallback score for user", u.id, "=", score);
+
+    return {
+      userId: u.id,
+      score,
+      reason:
+        score >= 60
+          ? "Strong reciprocal skill match"
+          : score >= 40
+          ? "Partial skill overlap"
+          : "Low skill overlap",
+      isFallback: true
+    };
+  });
+
+  fallback.sort((a, b) => b.score - a.score);
+  return res.json(fallback);
+}
 
 
-          // OPTIONAL: sort highest first
-          filteredMatches.sort((a, b) => b.score - a.score);
-
-          res.json(filteredMatches);
-        } catch (e) {
-          // Silent fallback
-          res.json([]);
-        }
       }
     );
   });
 });
 
-/* =========================
-   START SERVER
-========================= */
+/**********************************
+ * START SERVER
+ **********************************/
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
-
