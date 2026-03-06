@@ -11,56 +11,62 @@ const mysql = require("mysql2");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
-const fetch = require("node-fetch"); // keep if Node < 18
+const fetch = require("node-fetch"); // Node < 18
 
 /**********************************
- * APP INIT (MUST BE FIRST)
+ * APP INIT
  **********************************/
 const app = express();
 
+/**********************************
+ * CORS
+ **********************************/
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://collab-theta-steel.vercel.app"
+  "https://collab-theta-steel.vercel.app",
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (Postman, curl)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
-
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /**********************************
- * DATABASE CONNECTION
+ * DATABASE
  **********************************/
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "",
   database: "testdb",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-db.connect(err => {
+// Test connection once
+db.getConnection((err, connection) => {
   if (err) {
-    console.error("❌ MySQL failed:", err);
-    return;
+    console.error("❌ Pool Connection Failed:", err);
+  } else {
+    console.log("✅ MySQL Pool Connected");
+    connection.release();
   }
-  console.log("✅ MySQL Connected");
 });
+
+
 
 /**********************************
- * MULTER CONFIG
+ * MULTER
  **********************************/
 const storage = multer.diskStorage({
   destination: "uploads/",
@@ -71,71 +77,129 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 app.use("/uploads", express.static("uploads"));
 
-/**********************************
- * GEMINI HELPER
- **********************************/
-if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ GEMINI_API_KEY missing in .env");
-  process.exit(1);
-}
 
+
+/**********************************
+ * GEMINI API CALLER
+ **********************************/
 async function callGemini(prompt) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
+  // Use v1beta for the most recent model features
+ const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+  try {
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1, // Lower temperature for more consistent matching
+          responseMimeType: "application/json" // Forces valid JSON output
+        }
       }),
+    });
+
+    // 1. Check for HTTP errors (like 404, 429, or 500)
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Gemini API Error (${res.status}):`, errorText);
+      throw new Error(`Gemini API failed with status ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // 2. Validate the response structure
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error("Gemini returned no candidates (check safety settings)");
+    }
+
+    // 3. Extract the text
+    const resultText = data.candidates[0].content.parts[0].text;
+    
+    return resultText;
+  } catch (error) {
+    console.error("❌ Error in callGemini:", error.message);
+    throw error; // Re-throw so your 'ai-match-many' route hits the 'catch' and uses fallback
+  }
+}
+/**********************************
+ * SAFE JSON PARSER
+ **********************************/
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\[.*\]/s);
+    if (match) return JSON.parse(match[0]);
+    throw new Error("Invalid JSON");
+  }
+}
+/**********************************
+ * GET TOP COLLABORATORS
+ **********************************/
+app.get("/users/top/:id", (req, res) => {
+  const userId = req.params.id;
+
+  db.query(
+    "SELECT id, fullName, skills_to_teach, skills_to_learn, profile_pic FROM users WHERE id != ?",
+    [userId],
+    (err, rows) => {
+      if (err) {
+        console.error("❌ DB Error:", err);
+        return res.status(500).json([]);
+      }
+
+      res.json(rows);
     }
   );
-
-  const data = await response.json();
-
-  if (!data.candidates || !data.candidates.length) {
-    throw new Error("Gemini returned no candidates");
-  }
-
-  return data.candidates[0].content.parts[0].text;
-}
+});
 
 /**********************************
- * USER ROUTES
+ * GET USER PROFILE BY ID
  **********************************/
-app.get("/users", (req, res) => {
-  db.query(
-    "SELECT id, fullName, skills_to_learn, skills_to_teach FROM users",
-    (err, rows) => {
-      if (err) return res.status(500).json(err);
-      res.json(rows);
-    }
-  );
-});
-
-app.get("/users/top/:id", (req, res) => {
-  db.query(
-    "SELECT id, fullName, skills_to_learn, skills_to_teach FROM users WHERE id != ? LIMIT 5",
-    [req.params.id],
-    (err, rows) => {
-      if (err) return res.status(500).json(err);
-      res.json(rows);
-    }
-  );
-});
-
 app.get("/user/:id", (req, res) => {
+  const { id } = req.params;
+
   db.query(
-    "SELECT * FROM users WHERE id = ?",
-    [req.params.id],
+    "SELECT id, fullName, email, skills_to_learn, skills_to_teach, profile_pic FROM users WHERE id = ?",
+    [id],
     (err, rows) => {
-      if (err) return res.status(500).json(err);
-      if (!rows.length) return res.status(404).json({});
+      if (err) {
+        console.error("❌ DB Error:", err);
+        return res.status(500).json({ message: "Database error" });
+      }
+
+      if (!rows.length) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       res.json(rows[0]);
     }
   );
 });
 
+/**********************************
+ * GET USERS BY SKILL
+ **********************************/
+app.get("/users/skill/:skill", (req, res) => {
+  const skill = req.params.skill.toLowerCase();
+
+  db.query(
+    "SELECT id, fullName, skills_to_teach, skills_to_learn, profile_pic FROM users WHERE LOWER(skills_to_teach) LIKE ?",
+    [`%${skill}%`],
+    (err, rows) => {
+      if (err) return res.status(500).json([]);
+      res.json(rows);
+    }
+  );
+});
+
+
+/**********************************
+ * USER ROUTES
+ **********************************/
 app.post("/register", (req, res) => {
   const { fullName, email, password } = req.body;
 
@@ -150,16 +214,12 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  console.log("LOGIN BODY:", req.body);
-
   const { email, password } = req.body;
 
   db.query(
     "SELECT * FROM users WHERE email=? AND password=?",
     [email, password],
     (err, rows) => {
-      console.log("DB ROWS:", rows);
-
       if (err) return res.status(500).json(err);
       if (!rows.length)
         return res.status(401).json({ message: "Invalid credentials" });
@@ -189,35 +249,48 @@ app.post("/update-skills/:id", upload.single("profilePic"), (req, res) => {
 app.post("/ai-match-many", async (req, res) => {
   const { userId } = req.body;
 
-  db.query("SELECT * FROM users WHERE id = ?", [userId], async (err, meRows) => {
+  db.query("SELECT * FROM users WHERE id=?", [userId], async (err, meRows) => {
     if (err || !meRows.length) return res.json([]);
 
     const me = meRows[0];
 
     db.query(
-      "SELECT * FROM users WHERE id != ?",
+      "SELECT * FROM users WHERE id!=?",
       [userId],
       async (err, users) => {
         if (err || !users.length) return res.json([]);
 
+        // 🔑 User lookup map
+        const userMap = {};
+        users.forEach(u => {
+          userMap[u.id] = {
+            name: u.fullName,
+            profile_pic: u.profile_pic
+          };
+        });
+
         const prompt = `
-You are an AI skill-matching system.
+You are an AI skill-matching engine.
 
-Return a JSON ARRAY only.
-Do not explain anything.
+STRICT RULES:
+- Output ONLY valid JSON
+- No markdown
+- No explanations
+- No comments
 
-If users have ANY overlapping or complementary skills,
-you MUST return at least one match.
+DEFINITION OF MATCH:
+A STRONG or PERFECT match exists ONLY when:
+- Skills that User A wants to learn are present in User B's teach skills
+AND
+- Skills that User A can teach are present in User B's learn skills
 
-Format:
+IMPORTANT:
+- Same-skill overlap without reciprocity is NOT a strong match.
+
+JSON FORMAT:
 [
-  { "userId": number, "score": number, "reason": string }
+ { "userId": number, "score": number, "reason": string }
 ]
-
-Scoring rules:
-- 70–100: strong reciprocal match
-- 40–69: partial but useful match
-- 20–39: weak but possible match
 
 MY PROFILE:
 Learn: ${me.skills_to_learn}
@@ -231,97 +304,216 @@ Teach: ${u.skills_to_teach}
 `).join("\n")}
 `;
 
-
         try {
-  let text = await callGemini(prompt);
+          let text = await callGemini(prompt);
+          text = text.replace(/```json|```/g, "").trim();
 
-  text = text.replace(/```json|```/g, "").trim();
+          const parsed = safeJsonParse(text);
 
-  let parsed = JSON.parse(text);
+          if (!Array.isArray(parsed) || !parsed.length)
+            throw new Error("Empty AI response");
 
-  // If Gemini actually returns something valid
-  if (Array.isArray(parsed) && parsed.length > 0) {
-    parsed = parsed.map(m => ({
-      userId: m.userId,
-      score: Number(m.score) || 0,
-      reason: m.reason || "AI-based compatibility analysis",
-      isFallback: false
-    }));
+          const result = parsed
+  .map(m => ({
+    userId: m.userId, // 🔥 ADD THIS
+    name: userMap[m.userId]?.name || "Unknown User",
+    profile_pic: userMap[m.userId]?.profile_pic || null,
+    score: Number(m.score) || 0,
+    reason: m.reason || "AI skill compatibility",
+    isFallback: false
+  }))
 
-    parsed.sort((a, b) => b.score - a.score);
-    return res.json(parsed);
-  }
+            .sort((a, b) => b.score - a.score);
 
-  throw new Error("Empty Gemini response");
+          return res.json(result);
 
-} catch (err) {
-  console.error("❌ Gemini HARD FAILURE:", err.message);
+        } catch (e) {
+          console.error("⚠️ Gemini Failed → Fallback");
 
-  // ✅ SMART FALLBACK (MOVED HERE)
-  const fallback = users.map(u => {
-    const myLearn = (me.skills_to_learn || "")
-      .toLowerCase()
-      .split(",")
-      .map(s => s.trim());
+          const fallback = users.map(u => {
+            const split = s =>
+              (s || "")
+                .toLowerCase()
+                .split(",")
+                .map(x => x.trim())
+                .filter(Boolean);
 
-    const myTeach = (me.skills_to_teach || "")
-      .toLowerCase()
-      .split(",")
-      .map(s => s.trim());
+            const myLearn = split(me.skills_to_learn);
+            const myTeach = split(me.skills_to_teach);
+            const uLearn = split(u.skills_to_learn);
+            const uTeach = split(u.skills_to_teach);
 
-    const uLearn = (u.skills_to_learn || "")
-      .toLowerCase()
-      .split(",")
-      .map(s => s.trim());
+            let reciprocalMatches = 0;
+            let oneSidedMatches = 0;
 
-    const uTeach = (u.skills_to_teach || "")
-      .toLowerCase()
-      .split(",")
-      .map(s => s.trim());
+            myLearn.forEach(skill => {
+              if (uTeach.includes(skill)) reciprocalMatches++;
+            });
 
-    let score = 20;
+            myTeach.forEach(skill => {
+              if (uLearn.includes(skill)) reciprocalMatches++;
+            });
 
-    myLearn.forEach(skill => {
-      if (uTeach.includes(skill)) score += 25;
-    });
+            myTeach.forEach(skill => {
+              if (uTeach.includes(skill)) oneSidedMatches++;
+            });
 
-    myTeach.forEach(skill => {
-      if (uLearn.includes(skill)) score += 25;
-    });
+            let score = 0;
+            let reason = "Low skill overlap";
 
-    score = Math.min(score, 90);
+            if (reciprocalMatches >= 2) {
+              score = 90;
+              reason = "Perfect reciprocal skill exchange";
+            } else if (reciprocalMatches === 1) {
+              score = 65;
+              reason = "Partial reciprocal skill match";
+            } else if (oneSidedMatches > 0) {
+              score = 30;
+              reason = "Same-skill similarity without exchange value";
+            } else {
+              score = 15;
+              reason = "No meaningful skill alignment";
+            }
 
-    // ✅ THIS LOG WILL NOW APPEAR
-    console.log("Fallback score for user", u.id, "=", score);
+            return {
+  userId: u.id, // 🔥 ADD THIS
+  name: u.fullName,
+  profile_pic: u.profile_pic,
+  score,
+  reason,
+  isFallback: true
+};
 
-    return {
-      userId: u.id,
-      score,
-      reason:
-        score >= 60
-          ? "Strong reciprocal skill match"
-          : score >= 40
-          ? "Partial skill overlap"
-          : "Low skill overlap",
-      isFallback: true
-    };
-  });
+          });
 
-  fallback.sort((a, b) => b.score - a.score);
-  return res.json(fallback);
-}
-
-
+          fallback.sort((a, b) => b.score - a.score);
+          return res.json(fallback);
+        }
       }
     );
   });
 });
+/**********************************
+ * SEND COLLAB REQUEST
+ **********************************/
+app.post("/collab-request/send", (req, res) => {
+  console.log("🔥 SEND ROUTE HIT");
+  console.log("BODY:", req.body);
+
+  const { senderId, receiverId } = req.body;
+
+  if (!senderId || !receiverId) {
+    return res.status(400).json({ message: "Invalid request data" });
+  }
+
+  if (senderId === receiverId) {
+    return res.status(400).json({ message: "Cannot send request to yourself" });
+  }
+
+  const insertQuery = `
+    INSERT INTO collab_requests (sender_id, receiver_id, status)
+    VALUES (?, ?, 'pending')
+  `;
+
+  db.query(insertQuery, [senderId, receiverId], (err, result) => {
+    if (err) {
+      console.error("❌ INSERT ERROR:", err);
+      return res.status(500).json({ message: "Insert failed" });
+    }
+
+    console.log("✅ Inserted ID:", result.insertId);
+    res.json({ success: true });
+  });
+});
+
+/**********************************
+ * GET COLLAB REQUESTS FOR USER
+ **********************************/
+app.get("/collab-requests/:userId", (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT 
+      cr.id AS requestId,
+      u.fullName AS name,
+      u.profile_pic,
+      cr.status,
+      cr.created_at
+    FROM collab_requests cr
+    JOIN users u ON cr.sender_id = u.id
+    WHERE cr.receiver_id = ?
+      AND cr.status = 'pending'
+    ORDER BY cr.created_at DESC
+  `;
+
+  db.query(query, [userId], (err, rows) => {
+    if (err) {
+      console.error("❌ Collab Request Fetch Error:", err);
+      return res.status(500).json([]);
+    }
+
+    res.json(rows);
+  });
+});
+app.post("/collab-request/accept", (req, res) => {
+  const { requestId } = req.body;
+
+  db.query(
+    "UPDATE collab_requests SET status='accepted' WHERE id=?",
+    [requestId],
+    err => {
+      if (err) return res.status(500).json({ success: false });
+      res.json({ success: true });
+    }
+  );
+});
+app.post("/collab-request/reject", (req, res) => {
+  const { requestId } = req.body;
+
+  db.query(
+    "UPDATE collab_requests SET status='rejected' WHERE id=?",
+    [requestId],
+    err => {
+      if (err) return res.status(500).json({ success: false });
+      res.json({ success: true });
+    }
+  );
+});
+/**********************************
+ * GET COLLAB REQUEST COUNT
+ **********************************/
+app.get("/collab-requests-count/:userId", (req, res) => {
+
+  const { userId } = req.params;
+
+  const query = `
+    SELECT COUNT(*) AS count
+    FROM collab_requests
+    WHERE receiver_id = ?
+    AND status = 'pending'
+  `;
+
+  db.query(query, [userId], (err, rows) => {
+
+    if (err) {
+      console.error("❌ Count Fetch Error:", err);
+      return res.status(500).json({ count: 0 });
+    }
+
+    res.json({
+      count: rows[0].count
+    });
+
+  });
+
+});
+
+
 
 /**********************************
  * START SERVER
  **********************************/
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`✅ Server running on port ${PORT}`)
+);
