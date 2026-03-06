@@ -33,7 +33,7 @@ export default function Contact() {
             <Phone className="w-10 h-10 text-yellow-600" />
             <div className="text-left">
               <h2 className="text-xl font-semibold">Phone</h2>
-              <p className="text-gray-700">+91 98765 43210</p>
+              <p className="text-gray-700">+91 72783 13646</p>
             </div>
           </div>
 
@@ -42,7 +42,7 @@ export default function Contact() {
             <MapPin className="w-10 h-10 text-yellow-600" />
             <div className="text-left">
               <h2 className="text-xl font-semibold">Location</h2>
-              <p className="text-gray-700">Bhopal, Madhya Pradesh</p>
+              <p className="text-gray-700">Howrah, West Bengal</p>
             </div>
           </div>
         </div>

@@ -2,16 +2,18 @@ import React, { useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { Menu, X } from "lucide-react";
 
-function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage }) {
+function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navLinks = [
-    { name: "Home", page: "home" },
-    { name: "Skills", page: "skills" },
-    { name: "Projects", page: "projects" },
-    { name: "About", page: "about" },
-    { name: "Contact", page: "contact" }
-  ];
+ const navLinks = [
+  { name: "Home", page: "home" },
+  { name: "Skills", page: "skills" },
+  { name: "Projects", page: "projects" },
+  { name: "Colab Requests", page: "requests" }, // ✅ NEW
+  { name: "About", page: "about" },
+  { name: "Contact", page: "contact" }
+];
+
 
   return (
     <nav className="bg-white shadow fixed w-full top-0 left-0 z-50">
@@ -30,35 +32,51 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage }) {
         </div>
 
         {/* DESKTOP NAV */}
-        <ul className="hidden md:flex items-center space-x-8 text-gray-700 font-medium">
-          {navLinks.map((link) => (
-            <li
-              key={link.page}
-              onClick={() => onPageChange(link.page)}
-              className={`cursor-pointer transition list-none ${
-                currentPage === link.page
-                  ? "text-yellow-500 font-semibold"
-                  : "hover:text-yellow-500"
-              }`}
-            >
-              {link.name}
-            </li>
-          ))}
-        </ul>
+        <ul className="hidden md:flex items-center gap-8 text-gray-700 font-medium list-none m-0 p-0">
+  {navLinks.map((link) => (
+    <li
+      key={link.page}
+      onClick={() => onPageChange(link.page)}
+      className={`cursor-pointer transition relative ${
+        currentPage === link.page
+          ? "text-yellow-500 font-semibold"
+          : "hover:text-yellow-500"
+      }`}
+    >
+      {link.name}
+
+      {/* 🔴 Request badge */}
+      {link.page === "requests" && requestCount > 0 && (
+        <span className="
+          absolute -top-2 -right-4
+          bg-red-500 text-white
+          text-xs font-bold
+          rounded-full
+          px-2 py-0.5
+          min-w-[20px]
+          text-center
+        ">
+          {requestCount}
+        </span>
+      )}
+    </li>
+  ))}
+</ul>
+
 
         {/* RIGHT SIDE (DESKTOP) */}
         <div className="hidden md:flex items-center space-x-4">
           {!isLoggedIn ? (
             <>
               <button
-                className="border border-yellow-500 text-yellow-600 px-4 py-1.5 rounded-full hover:bg-yellow-500 hover:text-white transition"
+                className="border-none text-yellow-600 px-4 py-1.5 rounded-full hover:bg-yellow-500 hover:text-white transition"
                 onClick={() => onPageChange("login")}
               >
                 Login
               </button>
 
               <button
-                className="bg-yellow-500 text-white px-5 py-1.5 rounded-full hover:bg-yellow-600 transition"
+                className="border-none  bg-yellow-500 text-white px-5 py-1.5 rounded-full hover:bg-yellow-600 transition"
                 onClick={() => onPageChange("Reg")}
               >
                 Join Now
@@ -75,7 +93,7 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage }) {
 
               <button
                 onClick={onLogout}
-                className="border border-yellow-600 text-yellow-600 px-4 py-1.5 rounded-full hover:bg-yellow-500 hover:text-white transition"
+                className="border-none text-yellow-600 px-4 py-1.5 rounded-full hover:bg-yellow-500 hover:text-white transition"
               >
                 Logout
               </button>
@@ -123,7 +141,7 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage }) {
               </button>
 
               <button
-                className="w-full bg-yellow-500 text-white py-2 rounded-full"
+                className="w-full bg-yellow-500 text-white py-2 rounded-full border-noneS"
                 onClick={() => {
                   onPageChange("Reg");
                   setIsOpen(false);

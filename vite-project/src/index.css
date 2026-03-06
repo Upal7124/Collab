@@ -2,7 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* @import "tailwindcss/preflight"; */
+ @import "tailwindcss/preflight"; 
 
 /* === 🌼 Global Base Styles === */
 body {
@@ -11,29 +11,20 @@ body {
 }
 
 /* === 🧱 Layout Helpers === */
-.container {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-}
-
+.container {  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;}
 
 /* === ⚡ Navbar === */
-.navbar {
-  @apply flex justify-between items-center py-4 bg-white/90 backdrop-blur-md sticky top-0 z-20 border-b border-yellow-300 shadow-sm transition-all duration-300;
-}
+.navbar {  @apply w-full bg-white/90 backdrop-blur-md sticky top-0 z-20 border-b border-yellow-200;}
 
 
 .navbar:hover {
   @apply shadow-md;
 }
 
-.navbar-title {
-  @apply font-extrabold text-yellow-500 tracking-tight hover:text-yellow-600 transition-colors duration-300 flex items-center gap-2;
-}
+.navbar-title {  @apply text-2xl font-extrabold text-yellow-500;}
 
 /* 🌟 Nav Links */
-.nav-links {
-  @apply flex space-x-8 text-gray-700 font-medium list-none;
-}
+.nav-links {  @apply flex items-center gap-8 text-gray-700 font-medium list-none;  list-style: none;}
 
 .nav-links li {
   @apply list-none;
@@ -168,5 +159,108 @@ h3 {
 @layer base {
   body {
     @apply overflow-x-hidden;
+  }
+}
+/* HAND BASE */
+.robot-hand {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* LETTER IN HAND */
+.held-letter {
+  margin-top: -18px;
+}
+
+/* ---------- ROBOT HAND MOTION (REALISTIC) ---------- */
+
+@keyframes handFromLeft {
+  0% {
+    transform: translateX(-360px) rotate(-18deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes handFromRight {
+  0% {
+    transform: translateX(360px) rotate(18deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes handFromTop {
+  0% {
+    transform: translateY(-360px) rotate(-12deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes handFromBottom {
+  0% {
+    transform: translateY(360px) rotate(12deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* ENTRY ANIMATIONS */
+.hand-left {
+  animation: handFromLeft 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hand-right {
+  animation: handFromRight 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hand-top {
+  animation: handFromTop 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hand-bottom {
+  animation: handFromBottom 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes settle {
+  0% {
+    transform: translateY(-6px) scale(0.96);
+  }
+  60% {
+    transform: translateY(2px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
   }
 }

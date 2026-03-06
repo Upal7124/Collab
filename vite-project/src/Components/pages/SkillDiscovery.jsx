@@ -5,147 +5,147 @@ const allSkills = [
   "Rust", "Kotlin", "Ruby", "Swift", "PHP", "TypeScript"
 ];
 
-const mockUsers = {
-  Python: [
-    { name: "Aarav Patel", img: "https://i.pravatar.cc/150?img=1" },
-    { name: "Meera Singh", img: "https://i.pravatar.cc/150?img=2" },
-    { name: "Rohan Verma", img: "https://i.pravatar.cc/150?img=3" }
-  ],
-  JavaScript: [
-    { name: "Neha Sharma", img: "https://i.pravatar.cc/150?img=4" },
-    { name: "Vikram Joshi", img: "https://i.pravatar.cc/150?img=5" },
-    { name: "Kushal Sen", img: "https://i.pravatar.cc/150?img=6" }
-  ],
-  Java: [
-    { name: "Sarthak Malhotra", img: "https://i.pravatar.cc/150?img=7" },
-    { name: "Priya Yadav", img: "https://i.pravatar.cc/150?img=8" }
-  ],
-  "C++": [
-    { name: "Manav Thakur", img: "https://i.pravatar.cc/150?img=9" },
-    { name: "Anisha Roy", img: "https://i.pravatar.cc/150?img=10" }
-  ],
-  "C#": [
-    { name: "John Mathews", img: "https://i.pravatar.cc/150?img=11" }
-  ],
-  Go: [
-    { name: "Ishan Garg", img: "https://i.pravatar.cc/150?img=12" }
-  ],
-  Rust: [
-    { name: "Harsh Chauhan", img: "https://i.pravatar.cc/150?img=13" }
-  ],
-  Kotlin: [
-    { name: "Rhea Kapoor", img: "https://i.pravatar.cc/150?img=14" }
-  ],
-  Ruby: [
-    { name: "Aditi Jain", img: "https://i.pravatar.cc/150?img=15" }
-  ],
-  Swift: [
-    { name: "Sanya Mehta", img: "https://i.pravatar.cc/150?img=16" }
-  ],
-  PHP: [
-    { name: "Zaid Ali", img: "https://i.pravatar.cc/150?img=17" }
-  ],
-  TypeScript: [
-    { name: "Kiran Rao", img: "https://i.pravatar.cc/150?img=18" },
-    { name: "Riti Tiwari", img: "https://i.pravatar.cc/150?img=19" }
-  ]
-};
-
-function SkillDiscovery() {
-  const [selectedSkill, setSelectedSkill] = useState(null);
+export default function SkillDiscovery({ onPageChange }) {
   const [search, setSearch] = useState("");
+  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const filteredSkills = allSkills.filter(skill =>
     skill.toLowerCase().includes(search.toLowerCase())
   );
 
-  return (
-    <section className="section-alt text-center py-20">
-      <div className="container">
+  /* ---------------- FETCH USERS FROM MYSQL ---------------- */
+  const fetchUsersBySkill = async (skill) => {
+    setSelectedSkill(skill);
+    setUsers([]);
+    setLoading(true);
 
-        {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
-          Explore <span className="text-yellow-500">Skills </span>  
-          & Find <span className="text-yellow-600">Experts</span>
+    try {
+      const res = await fetch(
+        `http://localhost:5000/users/skill/${skill}`
+      );
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- CLICK USER → MATCHCHECKER ---------------- */
+  const handleUserClick = (user) => {
+    localStorage.setItem("selectedMatchUser", JSON.stringify(user));
+    if (onPageChange) {
+      onPageChange("match");
+    }
+  };
+
+  /* ---------------- UI ---------------- */
+  return (
+    <section className="py-20 text-center bg-yellow-50 min-h-screen">
+      <div className="max-w-6xl mx-auto px-6">
+
+        <h1 className="text-5xl font-extrabold mb-6 text-gray-900">
+          Explore <span className="text-yellow-500">Skills</span> & Find{" "}
+          <span className="text-yellow-600">Experts</span>
         </h1>
 
-        {/* Subheading */}
-        <p className="text-gray-700 max-w-2xl mx-auto mb-12 text-lg">
-          Search for a programming language and discover people who excel at it.
+        <p className="text-gray-700 mb-12 text-lg">
+          Click a skill to see real collaborators from the platform.
         </p>
 
-        {/* Search Bar */}
+        {/* SEARCH */}
         <div className="flex justify-center mb-10">
           <input
             type="text"
             placeholder="Search skills..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-5 py-3 w-full max-w-md rounded-full shadow-lg border-none focus:border-yellow-500 focus:outline-none text-gray-700"
+            className="px-6 py-3 w-full max-w-md rounded-full shadow focus:outline-none"
           />
         </div>
 
-        {/* Skills in 2 Rows */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 max-w-3xl mx-auto mb-16 border-none">
-          {filteredSkills.map((lang, index) => (
+        {/* SKILL BUTTONS */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 max-w-3xl mx-auto mb-16">
+          {filteredSkills.map(skill => (
             <button
-              key={index}
-              onClick={() => setSelectedSkill(lang)}
+              key={skill}
+              onClick={() => fetchUsersBySkill(skill)}
               className="
-                bg-white shadow-lg px-4 py-3 rounded-full 
-                text-gray-800 font-semibold text-sm transition-all
+                bg-white px-5 py-3 rounded-full shadow
+                font-semibold text-gray-800
                 hover:bg-yellow-500 hover:text-white
-                transform hover:scale-105 border-none
+                transition
               "
             >
-              {lang}
+              {skill}
             </button>
           ))}
         </div>
 
-        {/* FULL SCREEN OVERLAY */}
+        {/* MODAL */}
         {selectedSkill && (
-          <div
-            className="
-              fixed inset-0 bg-blur bg-opacity-50 backdrop-blur-sm flex 
-              justify-center items-center p-6 z-50 animate-fadeIn
-            "
-          >
-            <div
-              className="
-                bg-white shadow-2xl rounded-2xl p-8 w-full max-w-3xl 
-                animate-slideUp relative
-              "
-            >
+          <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm
+                          flex justify-center items-center z-50 px-6">
 
-              {/* Close Button */}
+            <div className="bg-white rounded-3xl p-8 max-w-4xl w-full relative">
+
               <button
                 onClick={() => setSelectedSkill(null)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl"
+                className="absolute top-4 right-4 text-2xl"
               >
                 ✕
               </button>
 
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                Users skilled in <span className="text-yellow-600">{selectedSkill}</span>
+              <h2 className="text-3xl font-bold mb-6">
+                Users skilled in{" "}
+                <span className="text-yellow-600">{selectedSkill}</span>
               </h2>
 
-              {/* User Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 ">
-                {mockUsers[selectedSkill]?.map((user, idx) => (
+              {loading && (
+                <p className="text-lg text-gray-600">Loading users...</p>
+              )}
+
+              {!loading && users.length === 0 && (
+                <p className="text-gray-600">
+                  No users found for this skill.
+                </p>
+              )}
+
+              <div className="grid sm:grid-cols-2 gap-6 mt-6">
+                {users.map(user => (
                   <div
-                    key={idx}
+                    key={user.id}
+                    onClick={() => handleUserClick(user)}
                     className="
-                      bg-gray-100 p-5 rounded-xl shadow-md flex items-center gap-4 
-                      transition hover:bg-yellow-100 hover:shadow-xl
+                      bg-gray-100 p-6 rounded-2xl shadow-md
+                      flex items-center gap-5 cursor-pointer
+                      hover:bg-yellow-100 hover:shadow-xl
+                      hover:scale-[1.02]
+                      transition-all
                     "
                   >
                     <img
-                      src={user.img}
-                      className="w-16 h-16 rounded-full shadow"
-                      alt={user.name}
+                      src={
+                        user.profile_pic
+                          ? `http://localhost:5000/uploads/${user.profile_pic}`
+                          : `https://i.pravatar.cc/150?u=${user.id}`
+                      }
+                      className="w-16 h-16 rounded-full"
+                      alt={user.fullName}
                     />
-                    <p className="text-lg font-semibold text-gray-800">{user.name}</p>
+
+                    <div className="text-left">
+                      <p className="font-semibold text-lg text-gray-900">
+                        {user.fullName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Teaches: {user.skills_to_teach || "—"}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -158,5 +158,3 @@ function SkillDiscovery() {
     </section>
   );
 }
-
-export default SkillDiscovery;

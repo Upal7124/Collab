@@ -23,7 +23,7 @@ function Hero() {
           <div className="flex items-center bg-white shadow-lg rounded-full overflow-hidden w-full max-w-xl border-none">
             <input
               type="text"
-              placeholder="Search for a skill (e.g., Photography, Web Dev...)"
+              placeholder="Search for a skill (e.g., Python, Java...)"
               className="flex-1 px-5 py-3 text-gray-700 focus:outline-none border-none"
             />
             <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 font-semibold transition rounded-none border-none">
