@@ -5,7 +5,6 @@ export default function ScheduleMeeting({ onPageChange, level }) {
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState(60); // default
 
-  // 🔥 Hybrid Recommendation Logic
   useEffect(() => {
     if (level === "beginner") {
       setDuration(60);
@@ -29,10 +28,7 @@ export default function ScheduleMeeting({ onPageChange, level }) {
   return (
     <div className="min-h-screen bg-yellow-50 flex items-center justify-center p-6">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md text-center">
-
-        <h2 className="text-3xl font-extrabold mb-4">
-          Schedule Meeting 📅
-        </h2>
+        <h2 className="text-3xl font-extrabold mb-4">Schedule Meeting 📅</h2>
 
         <p className="text-gray-600 mb-6">
           Choose a date and time to collaborate.
@@ -57,9 +53,7 @@ export default function ScheduleMeeting({ onPageChange, level }) {
 
         {/* 🔥 Duration Selection (Hybrid Model) */}
         <div className="mb-6">
-          <p className="font-semibold mb-3">
-            Recommended: {duration} minutes
-          </p>
+          <p className="font-semibold mb-3">Recommended: {duration} minutes</p>
 
           <div className="flex justify-center gap-3 flex-wrap">
             {[30, 45, 60, 75, 90].map((d) => (
@@ -67,9 +61,7 @@ export default function ScheduleMeeting({ onPageChange, level }) {
                 key={d}
                 onClick={() => setDuration(d)}
                 className={`px-4 py-2 rounded-full border ${
-                  duration === d
-                    ? "bg-yellow-500 text-white"
-                    : "bg-gray-100"
+                  duration === d ? "bg-yellow-500 text-white" : "bg-gray-100"
                 }`}
               >
                 {d} min
@@ -94,7 +86,6 @@ export default function ScheduleMeeting({ onPageChange, level }) {
             Confirm
           </button>
         </div>
-
       </div>
     </div>
   );

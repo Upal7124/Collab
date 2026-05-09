@@ -31,7 +31,7 @@ export default function MatchChecker({ onPageChange }) {
         // ✅ Fix injected selected user
         if (selectedUser) {
           data.unshift({
-  userId: selectedUser.id, // 🔥 VERY IMPORTANT
+  userId: selectedUser.id, 
   name: selectedUser.fullName || "Selected User",
   score: 75,
   reason: "Selected from Skill Discovery",
