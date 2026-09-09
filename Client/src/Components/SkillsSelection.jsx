@@ -15,7 +15,11 @@ function SkillsSection({ onPageChange }) {
 
     setLoading(true);
 
-    fetch(`http://localhost:5000/users/top/${loggedUser.id}`)
+    fetch(`http://localhost:5000/api/users/top/${loggedUser.id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Fetch failed");
         return res.json();
@@ -23,17 +27,15 @@ function SkillsSection({ onPageChange }) {
       .then((data) => {
         console.log("Fetched collaborators:", data);
         setPeople(data);
-        setHasFetched(true); // ✅ mark fetch complete
+        setHasFetched(true);
       })
       .catch((err) => {
         console.error(err);
         setPeople([]);
-        setHasFetched(true); // ✅ even on error
+        setHasFetched(true);
       })
       .finally(() => setLoading(false));
   }, [loggedUser?.id]);
-
-  /* ---------------- UI STATES ---------------- */
 
   if (!loggedUser) {
     return (
@@ -51,7 +53,6 @@ function SkillsSection({ onPageChange }) {
     );
   }
 
-  // ✅ EMPTY STATE ONLY AFTER FETCH
   if (hasFetched && people.length === 0) {
     return (
       <div className="text-center py-20">
@@ -64,8 +65,6 @@ function SkillsSection({ onPageChange }) {
       </div>
     );
   }
-
-  /* ---------------- MAIN UI ---------------- */
 
   return (
     <section className="py-20 bg-gray-50">

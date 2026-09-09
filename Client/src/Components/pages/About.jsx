@@ -5,18 +5,15 @@ function About() {
     <section className="section-alt py-20">
       <div className="container mx-auto px-6">
 
-        {/* Heading */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-center text-gray-900 leading-tight mb-10">
           About <span className="text-yellow-500">Collab</span>
         </h1>
 
-        {/* Subheading */}
         <p className="text-center text-gray-700 max-w-3xl mx-auto text-lg mb-16">
           Collab is a skill-based barter platform where people exchange knowledge 
           instead of money. Learn anything, teach anything — together we grow.
         </p>
 
-        {/* Section 1: Mission */}
         <div className="bg-white rounded-2xl shadow-xl p-10 max-w-5xl mx-auto mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-5">
             Our <span className="text-yellow-600">Mission</span>
@@ -28,7 +25,6 @@ function About() {
           </p>
         </div>
 
-        {/* Section 2: How It Works */}
         <div className="bg-white rounded-2xl shadow-xl p-10 max-w-5xl mx-auto mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">
             How <span className="text-yellow-600">Collab Works</span>
@@ -73,7 +69,6 @@ function About() {
           </ul>
         </div>
 
-        {/* Section 3: Why Choose Us */}
         <div className="bg-white rounded-2xl shadow-xl p-10 max-w-5xl mx-auto mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">
             Why <span className="text-yellow-600">Choose Us?</span>
@@ -111,7 +106,6 @@ function About() {
           </div>
         </div>
 
-        {/* Section 4: Footer Note */}
         <div className="text-center mt-20">
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
             Built for Learners. Powered by Community.

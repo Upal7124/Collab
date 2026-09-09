@@ -34,7 +34,6 @@ export default function ScheduleMeeting({ onPageChange, level }) {
           Choose a date and time to collaborate.
         </p>
 
-        {/* Date & Time */}
         <div className="space-y-4 mb-6">
           <input
             type="date"
@@ -51,7 +50,6 @@ export default function ScheduleMeeting({ onPageChange, level }) {
           />
         </div>
 
-        {/* 🔥 Duration Selection (Hybrid Model) */}
         <div className="mb-6">
           <p className="font-semibold mb-3">Recommended: {duration} minutes</p>
 
@@ -70,7 +68,6 @@ export default function ScheduleMeeting({ onPageChange, level }) {
           </div>
         </div>
 
-        {/* Buttons */}
         <div className="flex gap-4">
           <button
             onClick={() => onPageChange("match")}

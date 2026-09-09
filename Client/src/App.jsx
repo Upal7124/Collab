@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-
-import SplashScreen from "./components/pages/SplashScreen.jsx";
 import Navbar from "./Components/Navbar.jsx";
 import Hero from "./Components/Hero.jsx";
 import SkillsSection from "./Components/SkillsSelection.jsx";
@@ -19,11 +17,9 @@ import FloatingMatchButton from "./Components/FloatingMatchButton.jsx";
 import CollabRequests from "./Components/pages/CollabRequests.jsx";
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
 
-  // 🔥 Unified Navigation System
   const [currentPage, setCurrentPage] = useState({
     name: "home",
     data: null,
@@ -36,53 +32,53 @@ export default function App() {
   const page = currentPage.name;
   const pageData = currentPage.data;
 
-  /* ---------------- SPLASH TIMER ---------------- */
-{showSplash && (  <SplashScreen onFinish={() => setShowSplash(false)} />)}
-  /* ---------------- RESTORE LOGIN ---------------- */
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) setIsLoggedIn(true);
   }, []);
 
-useEffect(() => {
-
-  if (!isLoggedIn) {
-    setRequestCount(0);
-    return;
-  }
-
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  if (!user?.id) return;
-
-  const fetchCount = async () => {
-
-    try {
-
-      const res = await fetch(
-        `http://localhost:5000/collab-requests-count/${user.id}`
-      );
-
-      const data = await res.json();
-
-      setRequestCount(data.count || 0);
-
-    } catch {
+  useEffect(() => {
+    if (!isLoggedIn) {
       setRequestCount(0);
+      return;
     }
 
-  };
+    const user = JSON.parse(localStorage.getItem("user"));
 
-  fetchCount();
+    if (!user?.id) return;
 
-  const interval = setInterval(fetchCount, 5000);
+    const fetchCount = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:5000/api/collab-requests-count",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
 
-  return () => clearInterval(interval);
+        if (!res.ok) {
+          throw new Error("Failed to fetch request count");
+        }
 
-}, [isLoggedIn]);
+        const data = await res.json();
 
+        setRequestCount(data.count || 0);
+      } catch (err) {
+        console.error("Request count error:", err);
+        setRequestCount(0);
+      }
+    };
 
-  /* ---------------- AUTH HANDLERS ---------------- */
+    fetchCount();
+
+    const interval = setInterval(fetchCount, 30000);
+
+    return () => clearInterval(interval);
+
+  }, [isLoggedIn]);
+
   const handleLogin = () => {
     setIsLoggedIn(true);
     navigate("home");
@@ -115,27 +111,19 @@ useEffect(() => {
         <Login onLogin={handleLogin} onPageChange={navigate} />
       )}
 
-      {page === "Reg" && (
-        <Register onRegister={() => navigate("Skillsetup")} />
-      )}
+      {page === "Reg" && <Register onRegister={() => navigate("Skillsetup")} />}
 
-      {page === "Skillsetup" && (
-        <Skillsetup onDone={() => navigate("home")} />
-      )}
+      {page === "Skillsetup" && <Skillsetup onDone={() => navigate("home")} />}
 
       {page === "profile" && <Profile />}
 
-      {page === "skills" && (
-        <SkillDiscovery onPageChange={navigate} />
-      )}
+      {page === "skills" && <SkillDiscovery onPageChange={navigate} />}
 
       {page === "projects" && <ProjectsPage />}
       {page === "about" && <About />}
       {page === "contact" && <Contact />}
 
-      {page === "match" && (
-        <MatchChecker onPageChange={navigate} />
-      )}
+      {page === "match" && <MatchChecker onPageChange={navigate} />}
 
       {page === "schedule" && (
         <ScheduleMeeting
@@ -156,10 +144,6 @@ useEffect(() => {
       )}
 
       <Footer />
-
-      {showSplash && (
-        <SplashScreen onFinish={() => setShowSplash(false)} />
-      )}
     </>
   );
 }

@@ -64,8 +64,7 @@ export default function ProjectsPage() {
   return (
     <section className="section-alt text-center py-20">
       <div className="container mx-auto px-6">
-        
-        {/* Heading */}
+
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
           Explore <span className="text-yellow-500">Projects</span>
         </h1>
@@ -74,7 +73,6 @@ export default function ProjectsPage() {
           Browse project domains and check out real IT projects created by skilled developers.
         </p>
 
-        {/* Search Bar */}
         <div className="flex justify-center mb-12">
           <div className="flex items-center bg-white shadow-lg rounded-full overflow-hidden w-full max-w-xl">
             <input
@@ -90,7 +88,6 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        {/* Project Tags */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 max-w-4xl mx-auto">
           {projectTags
             .filter((tag) =>
@@ -108,7 +105,6 @@ export default function ProjectsPage() {
             ))}
         </div>
 
-        {/* Floating Projects Box */}
         <AnimatePresence>
           {selectedProject && (
             <motion.div
@@ -123,8 +119,7 @@ export default function ProjectsPage() {
                 exit={{ scale: 0.85 }}
                 className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative overflow-y-auto max-h-[90vh]"
               >
-                {/* Close Button */}
-                <button
+                        <button
                   onClick={() => setSelectedProject(null)}
                   className="absolute top-4 right-4 bg-yellow-100 hover:bg-yellow-200 p-2 rounded-full"
                 >
@@ -135,7 +130,6 @@ export default function ProjectsPage() {
                   {selectedProject} <span className="text-yellow-500">Projects</span>
                 </h2>
 
-                {/* Cards */}
                 <div className="flex flex-col gap-6">
                   {filteredProjects.map((proj, idx) => (
                     <div

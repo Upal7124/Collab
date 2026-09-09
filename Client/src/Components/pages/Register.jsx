@@ -19,13 +19,12 @@ export default function Register({ onRegister }) {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/register", {
+      const res = await axios.post("http://localhost:5000/api/auth/register", {
         fullName: name,
         email,
         password,
       });
 
-      // ✅ AUTO LOGIN AFTER REGISTER
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -36,7 +35,7 @@ export default function Register({ onRegister }) {
       );
 
       alert("Registration successful!");
-      onRegister(); // go to SkillSetup
+      onRegister(); 
     } catch (err) {
       console.error(err);
       alert("Registration failed");
@@ -88,7 +87,7 @@ export default function Register({ onRegister }) {
               className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border"
             />
             <span
-              className="absolute right-4 top-11 cursor-pointer"
+              className="absolute right-4 top-8 cursor-pointer"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -105,7 +104,7 @@ export default function Register({ onRegister }) {
               className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border"
             />
             <span
-              className="absolute right-4 top-11 cursor-pointer"
+              className="absolute right-4 top-8 cursor-pointer"
               onClick={() => setShowConfirm(!showConfirm)}
             >
               {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -114,7 +113,7 @@ export default function Register({ onRegister }) {
 
           <button
             type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-full"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-full border-none"
           >
             Register
           </button>

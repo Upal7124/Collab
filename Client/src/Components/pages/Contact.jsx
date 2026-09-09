@@ -6,7 +6,6 @@ export default function Contact() {
     <section className="section-alt text-center py-20">
       <div className="container mx-auto px-6">
 
-        {/* Heading */}
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
           Get in <span className="text-yellow-500">Touch</span>
         </h1>
@@ -16,10 +15,8 @@ export default function Contact() {
           We'd love to connect with you. Reach out anytime!
         </p>
 
-        {/* Contact Info Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
           
-          {/* Email */}
           <div className="bg-white shadow-lg border border-yellow-400 rounded-2xl p-6 flex items-start gap-4 hover:shadow-2xl transition">
             <Mail className="w-10 h-10 text-yellow-600" />
             <div className="text-left">
@@ -28,7 +25,6 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Phone */}
           <div className="bg-white shadow-lg border border-yellow-400 rounded-2xl p-6 flex items-start gap-4 hover:shadow-2xl transition">
             <Phone className="w-10 h-10 text-yellow-600" />
             <div className="text-left">
@@ -37,7 +33,6 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Location */}
           <div className="bg-white shadow-lg border border-yellow-400 rounded-2xl p-6 flex items-start gap-4 hover:shadow-2xl transition">
             <MapPin className="w-10 h-10 text-yellow-600" />
             <div className="text-left">
@@ -47,7 +42,6 @@ export default function Contact() {
           </div>
         </div>
 
-        {/* Contact Form */}
         <form className="bg-white shadow-xl rounded-2xl p-10 max-w-2xl mx-auto border border-yellow-400">
           <h2 className="text-3xl font-bold mb-6 text-gray-900">
             Send Us a <span className="text-yellow-500">Message</span>
@@ -80,7 +74,6 @@ export default function Contact() {
           </button>
         </form>
 
-        {/* Footer */}
         <p className="text-gray-500 text-sm mt-14">
           © 2025 <span className="text-yellow-600 font-semibold">Collab Network</span> — Empowering Tech Collaborations
         </p>

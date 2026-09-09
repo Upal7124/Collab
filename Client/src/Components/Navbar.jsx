@@ -9,7 +9,7 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
   { name: "Home", page: "home" },
   { name: "Skills", page: "skills" },
   { name: "Projects", page: "projects" },
-  { name: "Colab Requests", page: "requests" }, // ✅ NEW
+  { name: "Colab Requests", page: "requests" },
   { name: "About", page: "about" },
   { name: "Contact", page: "contact" }
 ];
@@ -19,7 +19,6 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
     <nav className="bg-white shadow fixed w-full top-0 left-0 z-50">
       <div className="flex items-center justify-between px-8 h-16">
 
-        {/* LOGO */}
         <div
           className="cursor-pointer flex items-center"
           onClick={() => onPageChange("home")}
@@ -31,7 +30,6 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
           />
         </div>
 
-        {/* DESKTOP NAV */}
         <ul className="hidden md:flex items-center gap-8 text-gray-700 font-medium list-none m-0 p-0">
   {navLinks.map((link) => (
     <li
@@ -45,7 +43,6 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
     >
       {link.name}
 
-      {/* 🔴 Request badge */}
       {link.page === "requests" && requestCount > 0 && (
         <span className="
           absolute -top-2 -right-4
@@ -64,7 +61,6 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
 </ul>
 
 
-        {/* RIGHT SIDE (DESKTOP) */}
         <div className="hidden md:flex items-center space-x-4">
           {!isLoggedIn ? (
             <>
@@ -101,7 +97,6 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
           )}
         </div>
 
-        {/* MOBILE HAMBURGER */}
         <button
           className="md:hidden text-gray-700"
           onClick={() => setIsOpen(!isOpen)}
@@ -110,7 +105,6 @@ function Navbar({ onPageChange, isLoggedIn, onLogout, currentPage, requestCount 
         </button>
       </div>
 
-      {/* MOBILE MENU */}
       {isOpen && (
         <div className="md:hidden bg-white shadow px-8 py-4 space-y-3 animate-fadeIn">
           {navLinks.map((link) => (

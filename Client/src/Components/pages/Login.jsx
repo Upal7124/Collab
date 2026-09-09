@@ -14,42 +14,39 @@ export default function Login({ onLogin, onPageChange }) {
     e.preventDefault();
 
     axios
-      .post("http://localhost:5000/login", {
+      .post("http://localhost:5000/api/auth/login", {
         email: form.email,
         password: form.password,
       })
       .then((res) => {
-  if (!res.data.user) {
-    throw new Error("No user data");
-  }
+        if (!res.data.user) {
+          throw new Error("No user data");
+        }
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("token", res.data.token);
 
-  // Save logged-in user safely
-  localStorage.setItem("user", JSON.stringify(res.data.user));
-
-  alert("✅ Login successful!");
-  onLogin();
-})
+        alert("Login successful!");
+        onLogin();
+      })
 
       .catch(() => {
-        alert("❌ Invalid email or password");
+        alert("Invalid email or password");
       });
   }
 
   return (
     <section className="min-h-screen bg-[#FFFBEA] flex items-center justify-center px-4">
       <div className="bg-white w-full max-w-md p-10 rounded-2xl shadow-xl border border-yellow-200">
-        
         <h1 className="text-4xl font-extrabold text-center mb-3 text-gray-900">
           Login
         </h1>
 
         <p className="text-center text-gray-600 mb-8">
-          Welcome back! Sign in to continue 🌟
+          Welcome back! Sign in to continue
         </p>
 
         <form className="space-y-5" onSubmit={handleLogin}>
-          
-          {/* Email */}
+
           <div>
             <label className="text-sm font-semibold text-gray-700">Email</label>
             <input
@@ -63,26 +60,32 @@ export default function Login({ onLogin, onPageChange }) {
             />
           </div>
 
-          {/* Password */}
-          <div className="relative">
-            <label className="text-sm font-semibold text-gray-700">Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              required
-              placeholder="Enter your password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border border-gray-300 
-              focus:border-yellow-500 focus:ring-yellow-400 focus:outline-none shadow-sm"
-            />
+          <div>
+            <label className="text-sm font-semibold text-gray-700">
+              Password
+            </label>
 
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-10 -translate-y-1/2 text-gray-600 border-none bg-transparent"
-            >
-              {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-            </button>
+            <div className="relative mt-1">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Enter your password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full mt-1 py-3 px-4 rounded-full bg-gray-50 border border-gray-300 
+              focus:border-yellow-500 focus:ring-yellow-400 focus:outline-none shadow-sm"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2
+      flex items-center justify-center
+      text-gray-600 bg-transparent border-none p-0"
+              >
+                {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+              </button>
+            </div>
           </div>
 
           <button

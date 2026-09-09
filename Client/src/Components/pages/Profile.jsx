@@ -12,9 +12,6 @@ export default function Profile() {
     profilePic: null,
   });
 
-  /**********************************
-   * LOAD USER + PROFILE
-   **********************************/
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     setUser(storedUser);
@@ -29,30 +26,34 @@ export default function Profile() {
 
   const fetchProfile = async (id) => {
     try {
-      const res = await axios.get(`http://localhost:5000/user/${id}`);
+      const res = await axios.get(`http://localhost:5000/api/users/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
       setProfile(res.data);
     } catch (err) {
       console.error("Profile fetch error:", err);
       setProfile(false);
     }
   };
-
-  /**********************************
-   * SAVE PROFILE CHANGES
-   **********************************/
   const handleSave = async () => {
     try {
       const data = new FormData();
+
       data.append("skills_to_teach", formData.skills_to_teach);
       data.append("skills_to_learn", formData.skills_to_learn);
+
       if (formData.profilePic) {
         data.append("profilePic", formData.profilePic);
       }
 
-      await axios.post(
-        `http://localhost:5000/update-skills/${user.id}`,
-        data
-      );
+      await axios.post("http://localhost:5000/update-skills", data, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
       await fetchProfile(user.id);
       setIsEditing(false);
@@ -62,9 +63,6 @@ export default function Profile() {
     }
   };
 
-  /**********************************
-   * UI STATES
-   **********************************/
   if (!user) {
     return (
       <p className="text-center mt-20 text-lg text-gray-600">
@@ -89,9 +87,6 @@ export default function Profile() {
     );
   }
 
-  /**********************************
-   * DATA PARSING
-   **********************************/
   const teachSkills = profile.skills_to_teach
     ? profile.skills_to_teach.split(",")
     : [];
@@ -100,13 +95,9 @@ export default function Profile() {
     ? profile.skills_to_learn.split(",")
     : [];
 
-  /**********************************
-   * MAIN UI
-   **********************************/
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-white px-6 py-12 flex justify-center">
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden">
-
         {/* HEADER */}
         <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-36 relative">
           <div className="absolute left-1/2 -bottom-16 transform -translate-x-1/2">
@@ -122,17 +113,13 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* BODY */}
         <div className="pt-20 pb-10 px-10 text-center">
           <h1 className="text-3xl font-extrabold text-gray-900">
             {profile.fullName}
           </h1>
           <p className="text-gray-500 mt-1">{profile.email}</p>
 
-          {/* SKILLS */}
           <div className="grid md:grid-cols-2 gap-10 mt-12 text-left">
-
-            {/* TEACH */}
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Skills You Teach
@@ -153,7 +140,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* LEARN */}
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Skills You Want to Learn
@@ -173,10 +159,8 @@ export default function Profile() {
                 )}
               </div>
             </div>
-
           </div>
 
-          {/* ACTION */}
           <div className="mt-12">
             <button
               onClick={() => {
@@ -195,11 +179,9 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* EDIT MODAL */}
       {isEditing && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-lg p-8 shadow-xl">
-
             <h2 className="text-2xl font-bold mb-6 text-gray-800">
               Edit Profile
             </h2>

@@ -32,16 +32,14 @@ export default function Skillsetup({ onDone }) {
     try {
       setLoading(true);
 
-      await axios.post(
-        `http://localhost:5000/update-skills/${user.id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      await axios.post("http://localhost:5000/update-skills", formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
       alert("Profile updated successfully!");
-      onDone(); // go to home or profile
+      onDone();
     } catch (err) {
       console.error(err);
       alert("Failed to update profile");
@@ -56,9 +54,7 @@ export default function Skillsetup({ onDone }) {
         onSubmit={handleSubmit}
         className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg border border-yellow-200"
       >
-        <h1 className="text-3xl font-bold text-center mb-6">
-          Skill Setup
-        </h1>
+        <h1 className="text-3xl font-bold text-center mb-6">Skill Setup</h1>
 
         <label className="font-semibold">Skills you can teach</label>
         <input

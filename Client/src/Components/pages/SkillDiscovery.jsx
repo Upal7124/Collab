@@ -15,7 +15,6 @@ export default function SkillDiscovery({ onPageChange }) {
     skill.toLowerCase().includes(search.toLowerCase())
   );
 
-  /* ---------------- FETCH USERS FROM MYSQL ---------------- */
   const fetchUsersBySkill = async (skill) => {
     setSelectedSkill(skill);
     setUsers([]);
@@ -23,7 +22,7 @@ export default function SkillDiscovery({ onPageChange }) {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/users/skill/${skill}`
+        `http://localhost:5000/api/users/skill/${skill}`
       );
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
@@ -35,7 +34,6 @@ export default function SkillDiscovery({ onPageChange }) {
     }
   };
 
-  /* ---------------- CLICK USER → MATCHCHECKER ---------------- */
   const handleUserClick = (user) => {
     localStorage.setItem("selectedMatchUser", JSON.stringify(user));
     if (onPageChange) {
@@ -43,7 +41,6 @@ export default function SkillDiscovery({ onPageChange }) {
     }
   };
 
-  /* ---------------- UI ---------------- */
   return (
     <section className="py-20 text-center bg-yellow-50 min-h-screen">
       <div className="max-w-6xl mx-auto px-6">
@@ -57,7 +54,6 @@ export default function SkillDiscovery({ onPageChange }) {
           Click a skill to see real collaborators from the platform.
         </p>
 
-        {/* SEARCH */}
         <div className="flex justify-center mb-10">
           <input
             type="text"
@@ -68,7 +64,6 @@ export default function SkillDiscovery({ onPageChange }) {
           />
         </div>
 
-        {/* SKILL BUTTONS */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 max-w-3xl mx-auto mb-16">
           {filteredSkills.map(skill => (
             <button
@@ -86,7 +81,6 @@ export default function SkillDiscovery({ onPageChange }) {
           ))}
         </div>
 
-        {/* MODAL */}
         {selectedSkill && (
           <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm
                           flex justify-center items-center z-50 px-6">

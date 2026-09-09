@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-console.log("User from localStorage:", localStorage.getItem("user"));
 
 export default function CollabRequests({ onPageChange }) {
   const loggedUser = JSON.parse(localStorage.getItem("user"));
@@ -8,72 +7,70 @@ export default function CollabRequests({ onPageChange }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
 
-useEffect(() => {
-  const storedUser = JSON.parse(localStorage.getItem("user"));
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
 
-  if (!storedUser?.id) {
-    setLoading(false);
-    return;
-  }
+    if (!storedUser?.id) {
+      setLoading(false);
+      return;
+    }
 
-  const fetchRequests = async () => {
+    const fetchRequests = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/collab-requests", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const data = await res.json();
+        setRequests(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  const handleAction = async (requestId, action) => {
     try {
+      setActionLoading(requestId);
+
       const res = await fetch(
-        `http://localhost:5000/collab-requests/${storedUser.id}`
+        `http://localhost:5000/api/collab-requests/${requestId}/${action}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
       );
 
       const data = await res.json();
-      setRequests(Array.isArray(data) ? data : []);
+
+      if (!data.success) {
+        console.error("Action failed:", data.message);
+        return;
+      }
+
+      if (action === "accept") {
+        onPageChange("schedule", { requestId });
+        return;
+      }
+
+      if (action === "reject") {
+        setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
+      }
     } catch (err) {
-      console.error("Fetch error:", err);
-      setRequests([]);
+      console.error("Request action failed:", err);
     } finally {
-      setLoading(false);
+      setActionLoading(null);
     }
   };
-
-  fetchRequests();
-}, []);
-
-  const handleAction = async (requestId, action) => {
-  try {
-    setActionLoading(requestId);
-
-    const res = await fetch(
-      `http://localhost:5000/collab-request/${action}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId })
-      }
-    );
-
-    const data = await res.json();
-
-    if (!data.success) {
-      console.error("Action failed");
-      return;
-    }
-
-    if (action === "accept") {
-      onPageChange("schedule", { requestId });
-      return;
-    }
-
-    // ✅ If rejected → remove from UI
-    if (action === "reject") {
-      setRequests(prev =>
-        prev.filter(r => r.requestId !== requestId)
-      );
-    }
-
-  } catch (err) {
-    console.error("Request action failed:", err);
-  } finally {
-    setActionLoading(null);
-  }
-};
-
 
   if (loading) {
     return (
@@ -103,7 +100,7 @@ useEffect(() => {
       </h1>
 
       <div className="max-w-3xl mx-auto space-y-6">
-        {requests.map(req => (
+        {requests.map((req) => (
           <div
             key={req.requestId}
             className="bg-white rounded-2xl shadow-lg p-6 flex items-center justify-between"
@@ -130,9 +127,7 @@ useEffect(() => {
             <div className="flex gap-3">
               <button
                 disabled={actionLoading === req.requestId}
-                onClick={() =>
-                  handleAction(req.requestId, "reject")
-                }
+                onClick={() => handleAction(req.requestId, "reject")}
                 className="border-none px-4 py-2 rounded-full bg-gray-200 font-semibold disabled:opacity-60"
               >
                 Reject
@@ -140,9 +135,7 @@ useEffect(() => {
 
               <button
                 disabled={actionLoading === req.requestId}
-                onClick={() =>
-                  handleAction(req.requestId, "accept")
-                }
+                onClick={() => handleAction(req.requestId, "accept")}
                 className="border-none px-4 py-2 rounded-full bg-yellow-500 text-white font-semibold disabled:opacity-60"
               >
                 Accept
